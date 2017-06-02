@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.WakefulBroadcastReceiver;
 import android.support.v7.app.AppCompatActivity;
@@ -151,8 +152,10 @@ public class MainActivity extends AppCompatActivity {
 
                     if (isMyServiceRunning(CounterService.class)) {
                         Intent intent2 = new Intent(MainActivity.this, CounterService.class);
+                        //unregisterReceiver();
                         stopService(intent2);
                         wbr.completeWakefulIntent(new Intent("com.cse.sid.ec.MainActivity"));
+                        unregisterReceiver(wbr);
                         timerValue.setTextColor(getResources().getColor(R.color.Black));
                         timerValue.setText("20:00");
                         Snackbar.make(activity_main,"Reminder stopped!",Snackbar.LENGTH_SHORT).show();
@@ -177,6 +180,10 @@ public class MainActivity extends AppCompatActivity {
 
                     NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                     mNotificationManager.cancel(23);
+                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                    PowerManager.WakeLock wakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Kill");
+                    if(wakelock.isHeld())
+                    wakelock.release();
 
 
 

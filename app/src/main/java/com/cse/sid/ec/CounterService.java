@@ -38,12 +38,13 @@ public class CounterService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        /*PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        PowerManager.WakeLock wakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getCanonicalName());
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "wakelock");
+        if(!wakelock.isHeld())
         wakelock.acquire();
-        wakelock.release();*/
 
-        registerReceiver(wbr,new IntentFilter("com.cse.sid.ec.CounterService"));
+
+        //registerReceiver(wbr,new IntentFilter("com.cse.sid.ec.CounterService"));
         sendBroadcast(new Intent("com.cse.sid.ec.CounterService"));
 
         initial_time = SystemClock.elapsedRealtime();
@@ -56,7 +57,11 @@ public class CounterService extends Service {
     }
 
     private Runnable sendUpdatesToUI = new Runnable() {
+
         public void run() {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            PowerManager.WakeLock wakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"Kill");
+            wakelock.acquire();
             DisplayLoggingInfo();
             handler.postDelayed(this, 500); // update every 500 milliseconds
         }
@@ -164,8 +169,8 @@ public class CounterService extends Service {
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
         mBuilder.setContentIntent(resultPendingIntent);
 
-        registerReceiver(broadcastReceiver, new IntentFilter("myFilter"));
-        PendingIntent contentIntent = PendingIntent.getBroadcast(this, 0, new Intent("myFilter"), PendingIntent.FLAG_UPDATE_CURRENT);
+        registerReceiver(broadcastReceiver, new IntentFilter("com.cse.sid.ec.CounterService"));
+        PendingIntent contentIntent = PendingIntent.getBroadcast(this, 0, new Intent("com.cse.sid.ec.CounterService"), PendingIntent.FLAG_UPDATE_CURRENT);
         mBuilder.addAction(R.mipmap.stop,"Stop and exit",contentIntent);
 //        Intent broadcastIntent = new Intent(CounterService.this, broadcastReceiver.getClass());
 //        PendingIntent pendingIntent = PendingIntent.getBroadcast(CounterService.this, 0, broadcastIntent, 0);
@@ -194,8 +199,8 @@ public class CounterService extends Service {
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
         mBuilder.setContentIntent(resultPendingIntent);
 
-        registerReceiver(broadcastReceiver, new IntentFilter("myFilter"));
-        PendingIntent contentIntent = PendingIntent.getBroadcast(this, 0, new Intent("myFilter"), PendingIntent.FLAG_UPDATE_CURRENT);
+        registerReceiver(broadcastReceiver, new IntentFilter("com.cse.sid.ec.CounterService"));
+        PendingIntent contentIntent = PendingIntent.getBroadcast(this, 0, new Intent("com.cse.sid.ec.CounterService"), PendingIntent.FLAG_UPDATE_CURRENT);
         mBuilder.addAction(R.mipmap.stop,"Stop and exit",contentIntent);
 
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -222,25 +227,27 @@ public class CounterService extends Service {
     public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            try {
+                MainActivity MA = new MainActivity();
+                MA.wbr.completeWakefulIntent(new Intent("com.cse.sid.ec.CounterService"));
+                MA.timerValue.setTextColor(getResources().getColor(R.color.Black));
+                MA.timerValue.setText("20:00");
+                stopSelf();
+                NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                mNotificationManager.cancel(23);
+                Toast.makeText(getApplicationContext(), "20-20-20 Reminder stopped!", Toast.LENGTH_SHORT).show();
+                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                PowerManager.WakeLock wakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Kill");
+                if (wakelock.isHeld())
+                    wakelock.release();
+            }
+            catch (Exception e){
+                //Toast.makeText(CounterService.this,"Exception",Toast.LENGTH_SHORT).show();
+            }
 
-            MainActivity MA = new MainActivity();
-            MA.wbr.completeWakefulIntent(new Intent("com.cse.sid.ec.CounterService"));
-            MA.timerValue.setTextColor(getResources().getColor(R.color.Black));
-            MA.timerValue.setText("20:00");
-            stopSelf();
-            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            mNotificationManager.cancel(23);
-            Toast.makeText(getApplicationContext(), "20-20-20 Reminder stopped!", Toast.LENGTH_SHORT).show();
         }
     };
 
-    public WakefulBroadcastReceiver wbr = new WakefulBroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
 
-            Log.d("TAG","Mins wbr = "+String.valueOf(intent.getIntExtra("mins",0)));
-            Log.d("TAG","Secs wbr = "+String.valueOf(intent.getIntExtra("secs",0)));
-        }
-    };
 
 }
